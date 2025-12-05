@@ -1,0 +1,46 @@
+services:
+  appserver:
+    build:
+      context: ./.server
+      dockerfile: Dockerfile
+      args:
+        PROTHEUS_VERSION: 2510
+        GOOGLE_DRIVE_ID: 1-REG713pqVHn7cS9gU3c0K9uv73srAu2
+    image: protheus-appserver:2510
+    container_name: protheus-appserver
+    hostname: appserver
+    tty: true
+    stdin_open: true
+    env_file:
+      - .env
+    ports:
+      - '${HTTPREST_PORT:-8080}:${HTTPREST_PORT:-8080}'
+      - '${TCP_PORT:-2260}:${TCP_PORT:-2260}'
+      - '${HTTP_PORT:-8081}:${HTTP_PORT:-8081}'
+    networks:
+      - protheus_net
+    restart: unless-stopped
+    volumes:
+      - protheus_logs:/totvs/protheus/bin/log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${HTTPREST_PORT:-8080}/rest"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  protheus_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  protheus_logs:
+    driver: local
